@@ -4,7 +4,9 @@ Everything in Linux is a file.
 
 ## Types of Files
 
-There are five basic types of file in Linux system. One can use `file` command to show a description of file type. Or use `ls -l` to simply show the file type. 
+There are five basic types of file in Linux system. 
+
+Use `file` command to show a description of file type. Or use `ls -l` to simply show the file type. 
 
 ```shell
 $ cd /usr/share/doc/
@@ -55,7 +57,7 @@ $ mkdir -m 700 /tmp/new2 	# Create new2 with drwx——— permissions
 
 Links can be used to access the same file from multiple locations, without making copies. 
 
-- Symbolic link: a shortcut to another file at specific path. The shortcut and the target file are in fact quite independent, as with own set of permission and ownership, and changing one will not impact the other. First character of permission information for directory file is `l`. 
+- Symbolic link: a shortcut to another **file at specific path**. The shortcut and the target file are in fact quite independent, as with own set of permission and ownership, and changing one will not impact the other. First character of permission information for directory file is `l`. 
 - Hard link: nearly copies of the same physical file with same inode. Changing one will change all others, and deleting one will not completely remove the file. Hard link works only on regular files. 
 
 To create a link, use `ln` command.
@@ -125,7 +127,7 @@ The first 0 is a placeholder for commands, indicating one of the following:
 
 - set-UID program (4): runs with the assigned user permissions, instead of user that launched the command. 
 - set-GID program (2): runs with the assigned group permissions instead of group that launched the command. 
-- sticky program (1): the directory can only be removed or renamed by owner or root. It changes the last permission bit from `x` to `t`. 
+- sticky program (1): the directory can only be removed or renamed by owner or root. However users can change the content of files in it. It changes the last permission bit from `x` to `t`. 
 
 ### Change Ownership
 
@@ -138,11 +140,20 @@ $ chown chris:market test/ 	 	 # Change owner to chris and group to market
 $ chown -R chris test/ 			# Change all files below test/ to owner chris
 ```
 
+## Listing Filesystem
+
+`ls -laFh --color=always` 
+
+- `-l` long list
+- `-a` show hidden
+- `-F` add a file type indicator
+- `-h` human readable 
+
 ## Traversing Filesystem
 
 There are a few concepts about file system paths: 
 
-- Absolute path: path from `root`. 
+- Absolute path: path from `/`. 
 - Relative path: path from current working directory. 
 
 
@@ -160,6 +171,27 @@ There are two special options available to `cd` and `pwd` when working with link
 - `-P` access link in the context of permanent location (link target)
 - `-L` access link in the context of linked location (link itself)
 
+```shell
+$ cd $HOME
+$ ln -s /tmp tmp-link
+$ ls -l tmp-link
+lrwxrwxrwx 1 chris chris 13 Mar 24 12:41 tmp-link -> /tmp
+$ cd tmp-link/
+$ pwd
+/home/chris/tmp-link
+$ pwd -P
+/tmp
+$ pwd -L
+/home/chris/tmp-link
+$ cd -L ..
+$ pwd
+/home/chris
+$ cd tmp-link
+$ cd -P ..
+$ pwd
+/
+```
+
 ### Directory Stack
 
 `Bash` can remember previous working directories by putting then into a stack. 
@@ -167,19 +199,19 @@ There are two special options available to `cd` and `pwd` when working with link
 - `pushd <path>`: push path to top of stack
 - `pupd`: pop the stack top
 - `dirs -v`: show stack
-- `pushd -0`: move the last directory in stack to top
-- `pushd -2`: move the third directory from bottom to top
+- `pushd ~0`: move the last directory in stack to top
+- `pushd ~2`: move the third directory from bottom to top
 
-## Listing Filesystem
-
-`ls -laFh --color=always` 
-
-- `-l` long list
-- `-a` show hidden
-- `-F` add a file type indicator
-- `-h` human readable 
+To use the stack, push all working directories into the stack. Remember to **push one additional directory to stack top** since the top will always be overwritten. Then use `cd ~` to change working directories. 
 
 ## Copying Files
+
+`mv` rename a file or move the files into different directory (rename to new path).
+
+```shell
+$ mv a b c test/
+$ mv d test/dd 
+```
 
 `cp` copies a file into a different name or **same name in another directory**. 
 
@@ -188,13 +220,18 @@ There are two special options available to `cd` and `pwd` when working with link
 - `-a` copy files ownership and permission
 - `-R` recursive copy
 
+```shell
+$ cp a b c test/	# copy multiple files to directory test/
+$ cp d test/dd		# copy a file d into new name test/dd
+```
+
 `dd` copies data in terms of byte stream
 
 ```shell
 # input file /dev/zero is a special ile generates null characters
 # output file is ./mynullfile
 # count is number of blocks
-# bs is block size (512 by default)
+# bs is block size (512 byte by default)
 $ dd if=/dev/zero of=mynullfile count=10 bs=2
 10+0 records in
 10+0 records out
@@ -219,10 +256,10 @@ $ find <path> -name "*.jpg" -print
 # regular expression, note it matches full path 
 # thus path before filename needs to be included in the pattern
 $ find <path> -regex ".*/[a-f0-9\-]\{36\}\.jpg"
-# file accessed in the past 2 minutes
+# file accessed in the less than 2 minutes
 $ find <path> -amin -2 -print
-# file hasn't been accessed for 60 days
-$ find <path> -atime +60 
+# file hasn't been changed for 60 days (changed greater than 60 days)
+$ find <path> -ctime +60 
 # find by directory type
 $ find <path> -type d
 # find by permission
@@ -233,5 +270,7 @@ $ find / -xdev -size +10M -print | xargs ls -lS > /tmp/bigfiles.txt
 $ find /var -user chris -print | xargs ls -l
 # use ! to negate search criterion
 $ find /sbin/ -type f ! -group root -print | xargs ls -l
+# search term in files inside current directory
+$ find . -name '*.md' | xargs grep -c "merge"
 ```
 
